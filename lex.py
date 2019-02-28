@@ -32,6 +32,7 @@ PRINT_TK='printtk'
 
 
 
+
 def getChar()
 	c=f.read(1)
 	return c
