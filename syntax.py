@@ -82,7 +82,6 @@ def formalparitem()
 		exit(0)
 	
 def statements()
-	token=lex()
 	statement()
 	token=lex()
 	if token==SEMICOLON_TK:
@@ -286,14 +285,170 @@ def return_stat()
 
 def print_stat()
 	token=lex()
-	if token!=PRINT_TK:
-			print("Expected printtk! error in line",line)
+	#if token!=PRINT_TK:
+	#		print("Expected printtk! error in line",line)
+	#		exit(0)
+	expression()
+
+def input_stat()
+	token=lex()
+	#if token!=INPUT_TK:
+	#	print("Expected word 'input' at line,"line)
+	#	exit(0)
+	if token!=ID_TK
+		print("Expected ID at line,", line)
+		exit(0)
+		
+def actualpars()
+	#token=lex()
+	if token!=OPENPAR_TK:
+		print("Expected ( at line,",line)
+		exit(0)
+	actualparlist()
+	
+	if token!=CLOSEPAR_TK:
+		print("expected ) at line", line)
+	
+def actualparlist()
+	token=lex()
+	if token!=CLOSEPAR_TK:
+		actualparitem()
+		token=lex()
+		while token==COMMA_TK
+			actualparitem()
+			token=lex()
+	else:
+		return
+
+def actualparitem()
+	token=lex()
+	if token==IN_TK:
+		expression()
+	elif token==INOUT_TK:
+		token=lex()
+		if token!=ID_TK:
+		print("error expected ID", line)
+		exit(0)
+	elif token==INANDOUT_TK
+		token=lex()
+		if token!=ID_TK:
+		print("error expected ID", line)
+		exit(0)
+	else:
+		print("error actual par item",line)
+
+def condition()
+	boolterm()
+	token=lex()
+	while token==OR_TK:
+		boolterm()
+		token=lex()
+def boolterm()
+	boolfactor()
+	token=lex()
+	while token==AND_TK:
+		boolfactor()
+		token=lex()
+def boolfactor()
+	token=lex()
+	if token==NOT_TK:
+		token=lex()
+		if token==OPENBRACKET_TK:
+			condition()
+		
+		else:
+			print("expected [ at line",line)
 			exit(0)
+		token=lex()	
+		if token!=CLOSEBRACKET_TK:
+			print("error expected ] at line", line)
+	elif token==OPENBRACKET_TK:
+		condition()
+		token=lex()
+		if token!=CLOSEBRACKET_TK:
+			print("error expected ] at line", line)
+	else:
+		expression()
+		relational_oper()
+		expression()
+		
+def expression()
+	optional_sign()
+	term()
+	token=lex()
+	while(token==PLUS_TK or token==MINUS_TK):
+		add_oper()
+		term()
+		token=lex()
 
+def term()
+	factor()
+	token=lex()
+	while(token==STAR_TK or token==SLASH_TK):
+		mul_oper()
+		factor()
+		token=lex()
+		
+def factor()
+	if token==DIGIT_TK():
+		
+	elif token==OPENPAR_TK:
+		expression()
+		token=lex()
+		if token!=CLOSEPAR_TK:
+			print("expected ) at line", line)
+			exit(0)
+	elif token==ID_TK:
+		idtail()
+	else: 
+		print("error in factor", line)
+		
+def idtail()
+	token=lex()
+	if token==OPENBRACKET_TK:
+		actualpars()
+	else:
+		return
 
-
-
-
-
+def relational_oper()
+	if token==EQUAL_TK:
+		
+	if token==LESSOREQUAL_TK:
+		
+	if token==GREATEROREQUAL_TK:
+	
+	if token==LESS_TK:
+	
+	if token==GREATER_TK:
+	
+	if token==DIF_TK:
+	
+	else:
+		print("expected = <= >= <> < >", line)
+		exit(0)
+		
+def add_oper()
+	if token==PLUS_TK:
+	
+	if token==MINUS_TK:
+	
+	else:
+		print("expected, + or - ", line)
+		exit(0)
+		
+def mul_oper()
+	if token==STAR_TK:
+	
+	if token==SLASH_TK:
+	
+	else:
+		print("expected * or /", line)
+		
+def optional_sign()
+	try:
+		add_oper()
+	except:
+		
+	finally:
 	
 	
