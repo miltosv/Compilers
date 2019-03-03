@@ -82,6 +82,7 @@ def formalparitem()
 		exit(0)
 	
 def statements()
+	token=lex()
 	statement()
 	token=lex()
 	if token==SEMICOLON_TK:
@@ -169,10 +170,6 @@ def else_part()
 	
 def while_stat()
 	token=lex()
-	if token != WHILE_TK:
-		print 'Expected whiletk! error in line %d' %line
-		exit(0)
-	token=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
@@ -190,18 +187,14 @@ def while_stat()
 		print 'Expected endwhiletk! error in line %d' %line
 		exit(0)
 	
-def do_while_stat()
-	token=lex()
-	if token != DO_TK :
-		print 'Expected dotk! error in line %d' %line
-		exit(0)
-		
+def do_while_stat()	
 	statements()
 	token=lex()
 	if token != WHILE_TK :
 		print 'Expected whiletk! error in line %d' %line
 		exit(0)
 		
+	token=lex()	
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
@@ -214,11 +207,6 @@ def do_while_stat()
 		exit(0)
 	
 def loop_stat()
-	token=lex()
-	if token != LOOP_TK :
-		print 'Expected looptk! error in line %d' %line
-		exit(0)
-		
 	statements()
 	token=lex()
 	if token != ENDLOOP_TK :
