@@ -25,7 +25,7 @@ def declarations()
 		
 def varlist()
 	varlist()
-	tokenk=lex()
+	token=lex()
 	while token==COMMA_TK
 		token=lex()
 		
@@ -88,17 +88,35 @@ def statements()
 	
 def statement()
 	
-	if token=ID_TK
-		token=lex()
-	if token=IF_STAT
-		token=lex()
+	if token==ID_TK
+		#token=lex()
+	if token==IF_STAT
+		#token=lex()
 		if_stat()
-	if token=WHILE_TK
-		token=lex()
+	if token==WHILE_TK
+		#token=lex()
 		while_stat()
-	if token=DO_TK
-		token=lex()
+	if token==DO_TK
+		
 		do_stat()
+	if token==LOOPF_TK
+		
+		loop_stat()
+	if token==EXIT_TK
+		
+		exit_stat()
+	if token==FOR_TK
+	
+		for_stat()
+	
+	if token==INCASE_TK
+		
+		incase_stat()
+		
+	if token==RETURN_TK
+		
+		return_stat()
+		
 	
 		
 	
