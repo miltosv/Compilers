@@ -26,6 +26,7 @@ FUNCTION_TK='functiontk'
 ENDFUNCTION_TK='endfunctiontk'
 RETURN_TK='returntk'
 IN_TK='intk'
+INOUT_TK='inouttk'
 INANDOUT_TK='inandouttk'
 AND_TK='andtk'
 OR_TK='ortk'
@@ -33,7 +34,7 @@ NOT_TK='nottk'
 INPUT_TK='inputtk'
 PRINT_TK='printtk'
 
-
+ID_TK='idtk'
 DIGIT_TK='digittk'
 PLUS_TK='plustk'
 MINUS_TK='minustk'
@@ -49,10 +50,10 @@ EQUAL_TK='equaltk'
 ASSIGN_TK='assigntk'
 COLON_TK='colontk'
 DIF_TK='differenttk'
-SMALLOREQUAL_TK='smallorequaltk'
-SMALL_TK='smalltk'
-GREATOREQUAL_TK='greatorequaltk'
-GREAT_TK='greattk'
+LESSOREQUAL_TK='smallorequaltk'
+LESS_TK='smalltk'
+GREATEROREQUAL_TK='greatorequaltk'
+GREATER_TK='greattk'
 
 state=0
 line = 1
@@ -284,21 +285,21 @@ def lex()
 				token=DIF_TK
 				return token,'<>'
 			elif c=='=':
-				token=SMALLOREQUAL_TK
+				token=LESSOREQUAL_TK
 				return token,word
 			else:
 				backChar()
-				token=SMALL_TK
+				token=LESS_TK
 				return token,c
 				
 		if c=='>':
 			c=getChar()
 			if c =='=':
-				token=GREATOREQUAL_TK
+				token=GREATEROREQUAL_TK
 				return token, '>='
 			else:
 				backChar()
-				token=GREAT_TK
+				token=GREATER_TK
 				return token,c
 				
 	else:
