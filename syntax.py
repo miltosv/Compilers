@@ -64,7 +64,6 @@ def formalpars()
 	if token!=CLOSEPAR_TK
 		print("error, expected ')', line" line)
 		exit(0)
-<<<<<<< HEAD
 
 def formalparlist()
 	token=lex()
@@ -89,8 +88,17 @@ def statements()
 	
 def statement()
 	
-=======
+	if token=ID_TK
+		token=lex()
+	if token=IF_STAT
+		token=lex()
+		if_stat()
+	if token=WHILE_TK
+		token=lex()
+		while_stat()
+	if token=DO_TK
+		token=lex()
+		do_stat()
+	
 		
-def formalparitem()
->>>>>>> master
 	
