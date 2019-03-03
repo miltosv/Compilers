@@ -116,7 +116,24 @@ def statement()
 	if token==RETURN_TK
 		
 		return_stat()
+	
+	if token==INPUT_TK
+		
+		input_stat()
+		
+	if token==PRINT_TK
+		
+		print_stat()
 		
 	
+def assignment_stat()
+	token=lex()
+	if token!=ID_TK
+		print("expected ID at line",line)
+		exit(0)
+	else
+		expression()
 		
-	
+def if_stat()
+	token=lex()
+	if loken=OPENPAR_TK
