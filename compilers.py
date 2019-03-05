@@ -7,15 +7,16 @@ import os
 
 PROGRAM_TK='programtk'
 ENDPROGRAM_TK='endprogramtk'
-DECLARATIONS_TK='declarationstk'
+DECLARE_TK='declaretk'
 IF_TK='iftk'
 THEN_TK='thentk'
 ELSE_TK='elsetk'
 ENDIF_TK='endiftk'
-DO_TK='dotk'
+DOWHILE_TK='dotk'
 WHILE_TK='whiletk'
 ENDWHILE_TK='endwhiletk'
-LOOPF_TK='loopforevertk'
+ENDDOWHILE_TK='enddowhiletk'
+LOOP_TK='looptk'
 ENDLOOP_TK='endlooptk'
 EXIT_TK='exittk'
 FORCASE_TK='forcasetk'
@@ -104,7 +105,7 @@ def Reserved(word):
 	if word=="endprogram":
 		return ENDPROGRAM_TK,word
 	if word=="declare":
-		return DECLARATIONS_TK,word
+		return DECLARE_TK,word
 	if word=="if":
 		return IF_TK,word
 	if word=="then":
@@ -113,14 +114,16 @@ def Reserved(word):
 		return ELSE_TK,word
 	if word=="endif":
 		return ENDIF_TK
-	if word=="do":
-		return DO_TK,word
+	if word=="dowhile":
+		return DOWHILE_TK,word
 	if word=="while":
 		return WHILE_TK,word
+	if word=="enddowhile":
+		return ENDDOWHILE_TK,word
 	if word=="endwhile":
 		return ENDWHILE_TK,word
-	if word=="loopf":
-		return LOOPF_TK,word
+	if word=="loop":
+		return LOOP_TK,word
 	if word=="endloop":
 		return ENDLOOP_TK,word
 	if word=="exit":
@@ -334,6 +337,10 @@ def program():
 	else: 
 		print("the keyword program was expected at line",line)
 		exit(0)
+	if token!=ENDPROGRAM_TK:
+		print("expected endprogram at line",line)
+		exit(0)
+	token,word=lex()
 
 def block():
 	declarations()
@@ -342,15 +349,23 @@ def block():
 
 def declarations():
 	global token
-	if token==DECLARATIONS_TK:
+	#token,word=lex()
+	if token==DECLARE_TK:
+		token,word=lex()
+		print(token , 'declare')
 		varlist()
+		if token!=SEMICOLON_TK:
+			print("expected ; in line", line)
+			exit(0)
+		token,word=lex()
 	else:
-		print("Expected word 'declare' at line",line)
-		exit(0)
+		return
+		#print("Expected word 'declare' at line",line)
+		#exit(0)
 		
 def varlist():
 	global token
-	token,word=lex()
+	#token,word=lex()
 	if token==ID_TK:
 		token,word=lex()
 		while token==COMMA_TK:
@@ -358,28 +373,30 @@ def varlist():
 			if token!=ID_TK:
 				print("Expected ID", line)
 				exit(0)
-			token,word=lex()
-		if token!=SEMICOLON_TK:
-			print("expected ; in line", line)
-			exit(0)
+			token,word=lex()	
 	else:
 		return
 
 def subprograms():
 	global token
-	token,word=lex()
-	print(token)
+	#print(token,'function')
 	while token==FUNCTION_TK:
-		subprogram()
 		token,word=lex()
+		subprogram()
 	
 def subprogram():
 	global token	
-	token,word=lex()
+	print(token,'before id ')
 	if token!=ID_TK:
 		print("error in line",line,"function id expected")
-		exit()
+		exit(0)
+	token,word=lex()
+	print(token,'afteer id')
 	funcbody()
+	if token!=ENDFUNCTION_TK:
+		print("error in line",line,"endfunction expected")
+		exit(0)
+	token,word=lex()
 	
 def funcbody():
 	formalpars()
@@ -387,31 +404,28 @@ def funcbody():
 
 def formalpars():
 	global token
-	token,word=lex()
-	print(token)
 	if token!=OPENPAR_TK:
 		print("error in line",line)
 		exit(0)
 	
-	#token,word=lex()
-	#if token==IN_TK or token==INANDOUT_TK or token==INOUT_TK:
+	token,word=lex()
 	formalparlist()
 		
 	if token!=CLOSEPAR_TK:
 		print("error, expected ')', line", line)
 		exit(0)
-
+	token,word=lex()
+		
 def formalparlist():
 	global token
-	token,word=lex()
 	if token==CLOSEPAR_TK:
 		return
 		
 	formalparitem()
-	token,word=lex()
+	
 	while token==COMMA_TK:	
-		formalparitem()
 		token,word=lex()
+		formalparitem()
 	return 		
 	
 def formalparitem():
@@ -422,17 +436,17 @@ def formalparitem():
 		if token!=ID_TK:
 			print("error, expected ID at line", line)
 			exit(0)
+		token,word=lex()
 	
 def statements():
 	global token
 	statement()
-	token,word=lex()
-	if token==SEMICOLON_TK:
-		statements()
+	while token==SEMICOLON_TK:
+		token,word=lex()
+		statement()
 	
 def statement():
 	global token
-	
 	if token==ID_TK:
 		assignment_stat()
 	if token==IF_TK:
@@ -441,10 +455,10 @@ def statement():
 	if token==WHILE_TK:
 		#token,word=lex()
 		while_stat()
-	if token==DO_TK:
+	if token==DOWHILE_TK:
 		
-		do_stat()
-	if token==LOOPF_TK:
+		dowhile_stat()
+	if token==LOOP_TK:
 		
 		loop_stat()
 	if token==EXIT_TK:
@@ -478,6 +492,7 @@ def assignment_stat():
 		print("expected ID at line",line)
 		exit(0)
 	else:
+		token,word=lex()
 		expression()
 		
 def if_stat():
@@ -486,33 +501,31 @@ def if_stat():
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
-		
+	token,word=lex()	
 	condition()
-	token,word=lex()
+
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
-	
 	token,word=lex()
+	
 	if token!=THEN_TK:
 		print ('Expected thentk! error in line %d' %line)
 		exit(0)
-		
+	token,word=lex()	
 	statements()
 	elsepart()
-	token,word=lex()
-	
+
 	if token != ENDIF_TK :
 		print ('Expected endiftk! error in line %d' %line)
 		exit(0)
+	token,word=lex()
 		
 def else_part():
 	global token
-	token,word=lex()
-	if token != ELSE_TK:
-		print ('Expected elsetk! error in line %d' %line)
-		exit(0)
-	statements()
+	if token == ELSE_TK:
+		token,word=lex()
+		statements()
 	
 def while_stat():
 	global token
@@ -520,55 +533,55 @@ def while_stat():
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
-		
+	token,word=lex()	
 	condition()
-	token,word=lex()
+
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
-	
+	token,word=lex()
 	statements()
 	
 	if token != ENDWHILE_TK :
 		print ('Expected endwhiletk! error in line %d' %line)
 		exit(0)
+	token,word=lex()
 	
 def do_while_stat():
 	global token
-	statements()
 	token,word=lex()
-	if token != WHILE_TK :
+	statements()
+
+	if token != ENDDOWHILE_TK :
 		print ('Expected whiletk! error in line %d' %line)
 		exit(0)
-		
 	token,word=lex()	
+	
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
-		
+	token,word=lex()	
 	condition()
-	token,word=lex()
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
+	token,word=lex()
 	
 def loop_stat():
 	global token
-	statements()
 	token,word=lex()
+	statements()
 	if token != ENDLOOP_TK :
 		print ('Expected endlooptk! error in line %d' %line)
 		exit(0)
-		
+	token,word=lex()	
+	
 def exit_stat():
 	global token
 	token,word=lex()
-	if token != EXIT_TK :
-		print ('Expected exitptk! error in line %d' %line)
-		exit(0)	
-
+	
 def forcase_stat():
 	global token
 	token,word=lex()
@@ -577,34 +590,40 @@ def forcase_stat():
 		if token!=OPENPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
-		condition()
 		token,word=lex()
+		condition()
+	
 		if token!=CLOSEPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
+		token,word=lex()
+		
 		if token!=COLON_TK:
 			print("Expected colontk! error in line",line)
 			exit(0)
-			
+		token,word=lex()
 		statements()
 		
-	token,word=lex()
 	if token!=DEFAULT_TK:
 			print("Expected defaulttk! error in line",line)
 			exit(0)
+	token,word=lex()
+	
 	if token!=COLON_TK:
 			print("Expected colontk! error in line",line)
 			exit(0)
-			
+	token,word=lex()		
 	statements()
-	token,word=lex()
+
 	if token!=ENDDEFAULT_TK:
 			print("Expected enddefaulttk! error in line",line)
 			exit(0)
 	token,word=lex()
+	
 	if token!=ENDFORCASE_TK:
 			print("Expected endforcasetk! error in line",line)
 			exit(0)	
+	token,word=lex()
 	
 def incase_stat():
 	global token
@@ -614,121 +633,132 @@ def incase_stat():
 		if token!=OPENPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
-		condition()
 		token,word=lex()
+		condition()
+		
 		if token!=CLOSEPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
+		token,word=lex()
 		if token!=COLON_TK:
 			print("Expected colontk! error in line",line)
 			exit(0)
-			
+		token,word=lex()	
 		statements()
 		
-	token,word=lex()
+	
 	if token!=ENDINCASE_TK:
 			print("Expected endincasetk! error in line",line)
 			exit(0)	
+	token,word=lex()
 	
 def return_stat():
 	global token
 	token,word=lex()
-	if token!=RETURN_TK:
-			print("Expected returntk! error in line",line)
-			exit(0)	
-
+	expression()	
+	
 def print_stat():
 	global token
 	token,word=lex()
-	#if token!=PRINT_TK:
-	#		print("Expected printtk! error in line",line)
-	#		exit(0)
 	expression()
 
 def input_stat():
 	global token
 	token,word=lex()
-	#if token!=INPUT_TK:
-	#	print("Expected word 'input' at line,"line)
-	#	exit(0)
+
 	if token!=ID_TK:
 		print("Expected ID at line,", line)
 		exit(0)
+	token,word=lex()
 		
 def actualpars():
 	global token
-	#token,word=lex()
+
 	if token!=OPENPAR_TK:
 		print("Expected ( at line,",line)
 		exit(0)
+	token,word=lex()
 	actualparlist()
 	
 	if token!=CLOSEPAR_TK:
 		print("expected ) at line", line)
+		exit(0)
+	token,word=lex()
 	
 def actualparlist():
 	global token
-	token,word=lex()
 	if token!=CLOSEPAR_TK:
 		actualparitem()
-		token,word=lex()
 		while token==COMMA_TK:
-			actualparitem()
 			token,word=lex()
+			actualparitem()
 	else:
 		return
 
 def actualparitem():
 	global token
-	token,word=lex()
+
 	if token==IN_TK:
+		token,word=lex()
 		expression()
 	elif token==INOUT_TK:
 		token,word=lex()
 		if token!=ID_TK:
 			print("error expected ID", line)
 			exit(0)
+		token,word=lex()
 	elif token==INANDOUT_TK:
 		token,word=lex()
 		if token!=ID_TK:
 			print("error expected ID", line)
 			exit(0)
+		token,word=lex()
 	else:
 		print("error actual par item",line)
+		exit(0)
 
 def condition():
 	global token
 	boolterm()
-	token,word=lex()
+
 	while token==OR_TK:
-		boolterm()
 		token,word=lex()
+		boolterm()
+		
 def boolterm():
 	global token
 	boolfactor()
-	token,word=lex()
+	
 	while token==AND_TK:
-		boolfactor()
 		token,word=lex()
+		boolfactor()
+		
 def boolfactor():
 	global token
-	token,word=lex()
+
 	if token==NOT_TK:
 		token,word=lex()
 		if token==OPENBRACKET_TK:
+			token,word=lex()
 			condition()
 		
 		else:
 			print("expected [ at line",line)
 			exit(0)
-		token,word=lex()	
+			
 		if token!=CLOSEBRACKET_TK:
 			print("error expected ] at line", line)
-	elif token==OPENBRACKET_TK:
-		condition()
+			exit(0)
 		token,word=lex()
+		
+	elif token==OPENBRACKET_TK:
+		token,word=lex()
+		condition()
+		
 		if token!=CLOSEBRACKET_TK:
 			print("error expected ] at line", line)
+			exit(0)
+		token,word=lex()
 	else:
 		expression()
 		relational_oper()
@@ -738,40 +768,46 @@ def expression():
 	global token
 	optional_sign()
 	term()
-	token,word=lex()
+	
 	while(token==PLUS_TK or token==MINUS_TK):
+		token,word=lex()
 		add_oper()
 		term()
-		token,word=lex()
 
 def term():
 	global token
 	factor()
-	token,word=lex()
+	
 	while(token==STAR_TK or token==SLASH_TK):
+		token,word=lex()
 		mul_oper()
 		factor()
-		token,word=lex()
 		
 def factor():
 	global token
 	if token==DIGIT_TK():
+		token,word=lex()
 		return
 	elif token==OPENPAR_TK:
-		expression()
 		token,word=lex()
+		expression()
+		
 		if token!=CLOSEPAR_TK:
 			print("expected ) at line", line)
 			exit(0)
+		token,word=lex()
 	elif token==ID_TK:
+		token,word=lex()
 		idtail()
 	else: 
 		print("error in factor", line)
+		exit(0)
 		
 def idtail():
 	global token
-	token,word=lex()
+
 	if token==OPENBRACKET_TK:
+		token,word=lex()
 		actualpars()
 	else:
 		return
@@ -815,7 +851,11 @@ def mul_oper():
 		
 def optional_sign():
 	global token
-	lex()
+	if token==PLUS_TK or token==MINUS_TK:
+		add_oper()
+	else:
+		return
+		
 
 f=open(sys.argv[1],"r")
 program()
