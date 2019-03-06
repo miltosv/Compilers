@@ -5,23 +5,17 @@ function three (in g, inout x, inandout m)
 declare k, j;
 k:=g;
 j:=g;
-do
+dowhile
 if (k>i) then
 k:=k-1
 endif;
 j:=j*k;
 k:=k+g
-while (k<1);
+enddowhile (k<1);
 m:=j;
 return m+1;
 x:=7
 endfunction
-i:=three (in i+2, inout d, inandout f)
+i:=three 
 endfunction
-function one (in g)
-g:=two(in g)
-endfunction
-i:=5;
-g:=1;
-g:=one(in g)
 endprogram

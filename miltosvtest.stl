@@ -1,0 +1,8 @@
+program miltosv
+	declare k,l,m,o,p,q;
+	loop
+		if(not[k<l and m<o]) then
+			exit
+		endif;
+	endloop
+endprogram

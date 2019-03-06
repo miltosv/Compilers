@@ -1,0 +1,16 @@
+program cse52944
+	declare m,o,i,k,a,n;
+	
+	function cse5(in m,inout o,inandout i)
+		forcase
+			when(m>o) : m:=m-1
+			default: m:=m+1 enddefault
+		endforcase;
+		
+		incase
+			when(o<i) : o:=o+5
+		endincase
+	endfunction
+	k:=k+3;
+	print k
+endprogram

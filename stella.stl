@@ -1,0 +1,25 @@
+program stella
+	declare x,y,z;
+	function help(in x, inout z)
+		x:=x+y
+	endfunction
+	
+	function mul(inout z,in y)
+		if (z>y) then
+			z:=(2*y)*2
+		else
+			y:=(2*y)*2
+		endif;
+	endfunction
+	
+	function miltos(in x, inout y)
+		declare k,q;
+		if (x>=y)then
+			k:=2;
+			x:=k
+		else
+			q:=x*y;
+			y:=q
+		endif
+	endfunction
+endprogram
