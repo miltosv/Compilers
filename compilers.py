@@ -5,7 +5,8 @@ from __future__ import nested_scopes
 # Reserve Words
 import sys
 import os
-
+from tkinter.constants import CURRENT
+import symbol
 
 PROGRAM_TK='programtk'
 ENDPROGRAM_TK='endprogramtk'
@@ -67,7 +68,7 @@ buffer="\0"*150
 token=''
 word=''
 tempCounter=0
-label=''
+label=0
 programID=''
 
 symboltable = []
@@ -83,7 +84,7 @@ class entity:
 	
 	
 	startquad = -1
-	arguments = emptyList()
+	arguments = []
 	framelength = -1
 	parMode = 0
 	value = ''
@@ -109,8 +110,8 @@ class argument:
 	
 	type = ''
 	next= None
-	def __init__(self,parmode):
-	
+	def __init__(self,par):
+		parmode=par
  ##SYNARTISEIS GIA TON ENDIAMESO KODIKA##
 
 def nextQuad():
@@ -122,7 +123,7 @@ def emptyList():
 
 def newTemp():
 	global tempCounter
-	t='T_'+tempCounter
+	t='T_'+str(tempCounter)
 	return t
 
 def genQuad(oper,x,y,z):
@@ -132,8 +133,7 @@ def genQuad(oper,x,y,z):
 	quad = [lbl, oper, x, y, z]
 	label = label + 1
 	
-	intermediate = intermediate + [quad]
-	
+	intermediate = intermediate + quad
 def makeList(x):
 	z='L'+str(x)
 	return[z]
@@ -428,13 +428,13 @@ def program():
 	global word
 	token,word=lex()
 	if token==PROGRAM_TK:
-		#new_scope()
+		#newscope
 		token,word=lex()
 		if token==ID_TK:
-			global programID
-			programID=word	   				  
-			token,word=lex()
-			block(programID)
+			#global programID
+			#programID=token	   				  
+			token,word=lex();
+			block();
 		else:
 			print ("Program Name expected at line",line)
 			exit(0)
@@ -446,17 +446,13 @@ def program():
 		exit(0)
 	else:
 		print('SyntaxPassed')
-		exit(0)
-	genQuad("halt", "_","_", "_")
+		#exit(0)
+	
 
-def block(name):
-	global token
-	global word
+def block():
 	declarations()
 	subprograms()
-	genQuad("begin_block",name , "_", "_")
 	statements()
-	genQuad("end_block",name,"_","_")
 
 def declarations():
 	global token
@@ -499,19 +495,17 @@ def subprogram():
 	if token!=ID_TK:
 		print("error in line",line,"function id expected")
 		exit(0)
-	global subprogrmID
-	subprogrmID=word
 	token,word=lex()
-	funcbody(subprogrmID)
+	funcbody()
 	if token!=ENDFUNCTION_TK:
 		print("error in line",line,"endfunction expected")
 		exit(0)
 	#delete_scope()
 	token,word=lex()
 	
-def funcbody(name):
+def funcbody():
 	formalpars()
-	block(name)
+	block()
 
 def formalpars():
 	global token
@@ -563,7 +557,7 @@ def statement():
 	global token
 	global word
 	if token==ID_TK:
-		assignment_stat(word)
+		assignment_stat()
 	elif token==IF_TK:
 		
 		if_stat()
@@ -601,32 +595,26 @@ def statement():
 	else:
 		return
 	
-def assignment_stat(IDPlace):
+def assignment_stat():
 	global token
 	global word
-	EPlace=""
-	
 	token,word=lex()
 	
 	if token!=ASSIGN_TK:
 		print("expected := at line",line)
 		exit(0)
 	token,word=lex()
-	EPlace=expression()
-	genQuad(":=", EPlace, "_", IDPlace)
+	expression()
 		
 def if_stat():
 	global token
 	global word
-	BTrue=emptyList()
-	BFalse=emptyList()
-	ifList=emptyList()
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()
-	BTrue,BFalse=condition()
+	condition()
 
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
@@ -636,14 +624,9 @@ def if_stat():
 	if token!=THEN_TK:
 		print ('Expected thentk! error in line %d' %line)
 		exit(0)
-	token,word=lex()
-	backpatch(BTrue,nextQuad())	
+	token,word=lex()	
 	statements()
-	ifList=makeList(nextQuad())
-	genQuad("jump", "_", "_", "_")
-	backpatch(BFalse, nextQuad())
 	else_part()
-	backpatch(ifList, nextQuad())
 
 	if token != ENDIF_TK :
 		print ('Expected endiftk! error in line %d' %line)
@@ -660,26 +643,19 @@ def else_part():
 def while_stat():
 	global token
 	global word
-	BTrue=emptyList()
-	BFalse=emptyList()
-	Bquad=""
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()	
-	BTrue,BFalse=condition()
-	Bquad=nextQuad()
+	condition()
+
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()
-	backpatch(BTrue,nextQuad())
-
 	statements()
-	genQuad("jump", "_", "_", "_")
-	backpatch(BFalse, nextQuad())
 	
 	if token != ENDWHILE_TK :
 		print ('Expected endwhiletk! error in line %d' %line)
@@ -689,12 +665,9 @@ def while_stat():
 def dowhile_stat():
 	global token
 	global word
-	BTrue=emptyList()
-	BFalse=emptyList()
 	token,word=lex()
-	sQuad=nextQuad()
 	statements()
-	
+
 	if token != ENDDOWHILE_TK :
 		print ('Expected whiletk! error in line %d' %line)
 		exit(0)
@@ -705,10 +678,7 @@ def dowhile_stat():
 		exit(0)
 	token,word=lex()	
 	
-	BTrue,BFalse=condition()
-	
-	backpatch(BFalse, sQuad)
-	backpatch(BTrue, nextQuad())
+	condition()
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
@@ -1110,14 +1080,14 @@ def optional_sign():
 	else:
 		return 
 		
-def intermediate(FileName):
+def intermediate_code(FileName):
 	global intermediate
 	FileName_new = FileName[:len(FileName)-3] + ".int"
 	output= open(FileName_new,"w")
 	
 	for i in range(len(intermediate)):
 		interm=intermediate[i]
-		code="" + interm[0] + ":" + interm[1] + " " + interm[2] + " " + interm[3] + " " + interm[4] + "\n"
+		code="" + interm + ":" + interm + " " + interm + " " + interm + " " + interm + "\n"
 		output.write(code)
 	output.close()	
 
@@ -1129,17 +1099,17 @@ def C_code(FileName):
 	file.write(code)
 	for i in range(len(intermediate)):
 		interm = intermediate[i]
-		code = interm[0]+" :"+" "
+		code = interm+" :"+" "
 		
-		if interm[1]==":=":
-			code = code + interm[4]+"="+interm[2]
-		if interm[1]=="+" or interm[1]=="-" or interm[1]=="*" or interm[1]=="/":
-			code = code + interm[4]+"="+interm[2]+interm[1]+interm[3]
-		if interm[1]=='<' or interm[1]=='>' or interm[1]=='<=' or interm[1]=='>=' or interm[1]=='<>':
-			code = code + "if("+interm[2]+interm[1]+interm[3]+") goto"+interm[4]
-		if interm[1]=='jump' :
-			code = code + "goto "+interm[4]
-		if interm[1]== "halt":
+		if interm==":=":
+			code = code + interm+"="+interm
+		if interm=="+" or interm=="-" or interm=="*" or interm=="/":
+			code = code + interm+"="+interm+interm+interm
+		if interm=='<' or interm=='>' or interm=='<=' or interm=='>=' or interm=='<>':
+			code = code + "if("+interm+interm+interm+") goto"+interm
+		if interm=='jump' :
+			code = code + "goto "+interm
+		if interm== "halt":
 			code = code + "{}"
 		code = code + '\n'
 		
@@ -1194,20 +1164,20 @@ def delete_scope():
 def add_entity(name, tp,quad):
 	global symboltable	
 	
-	Scope = symboltable [currentdepth]
+	#Scope = symboltable [currentdepth]
 	Entity = entity(name,tp)
 	
 	if tp == ID_TK:
-		baseoffset=Scope.baseOffset
+		baseoffset=symboltable [currentdepth].baseOffset
 		Entity.offset = baseoffset + 4
-		Scope.baseOffset=Scope.baseOffset + 4	
+		symboltable [currentdepth].baseOffset=symboltable [currentdepth].baseOffset + 4	
 	if tp == FUNCTION_TK:
 		Entity.startquad=quad
 		Entity.framelength=12
 	if tp == INOUT_TK or tp == INANDOUT_TK or tp == IN_TK:
 		parmode = tp
 		
-	Scope.Entities.append(Entity)
+	symboltable [currentdepth].Entities.append(Entity)
 	
 def add_argument(par):
 	global symboltable
@@ -1215,8 +1185,11 @@ def add_argument(par):
 	Argument = argument(par)
 	
 	
+	
 		
 
 f=open(sys.argv[1],"r")
 program()
+intermediate_code(sys.argv[1])
+C_code(sys.argv[1])
 

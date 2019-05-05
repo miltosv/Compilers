@@ -1,0 +1,7 @@
+program stella
+		if (z>y) then
+			z:=(2*y)*2
+		else
+			y:=(2*y)*2
+		endif;
+endprogram
