@@ -1,9 +1,9 @@
-#Stella Delia AM:2430
-#Miltiadis Vasiliadis AM:2944
-
+#Stella Delia AM:2430 cse32430
+#Miltiadis Vasiliadis AM:2944 cse52944 
 # Reserve Words
 import sys
 import os
+#from cProfile import label
 
 PROGRAM_TK='programtk'
 ENDPROGRAM_TK='endprogramtk'
@@ -64,10 +64,107 @@ line = 1
 buffer="\0"*150
 token=''
 word=''
+tempCounter=0
+label=''
+programID=''
 
-def getChar():
-        c=f.read(1)
-        return c
+symboltable = []
+
+
+#classes gia pinaka symbolon
+
+
+class entity:
+	name = ''
+	type = ''
+	offset = 0
+	
+	
+	startquad = -1
+	arguments = emptyList()
+	framelength = -1
+	parMode = 0
+	value = ''
+	nextEntiy = None
+	def __init__(self):
+		name= ''
+	
+
+
+class scope:
+	Entity = []
+	
+	nestingLevel=0
+	enclosingScope= None
+	
+	def __init__(self):
+		nestingLevel=0
+		
+class argument:
+	parmode = 0
+	
+	type = ''
+	next= None
+	
+	
+
+##SYNARTISEIS GIA TON ENDIAMESO KODIKA##
+
+def nextQuad():
+	global label
+	return label
+
+def emptyList():
+	return []
+
+def newTemp():
+	global tempCounter
+	t='T_'+tempCounter
+	return t
+
+def genQuad(oper,x,y,z):
+	global label
+	global intermediate	
+	lbl = 'L'+str(label)
+	quad = [lbl, oper, x, y, z]
+	label = label + 1
+	
+	intermediate = intermediate + [quad]
+	
+def makeList(x):
+	z='L'+str(x)
+	return[z]
+	
+def mergeList(L1,L2):
+	return L1+L2
+
+def backpatch(L,z):
+	z = 'L'+str(z)
+	global intermediate
+	for i in range(len(L)):
+		label = L[i]
+	for j in range(len(intermediate)):
+		x = intermediate[j]
+		if x[0] == label:
+			x[4] = z
+			break
+
+
+
+# Endiamesos
+
+intermediate= emptyList()
+variables= emptyList()
+
+#BTrue = emptyList()
+#BFalse = emptyList()
+#QTrue = emptyList()
+#QFalse = emptyList()
+########END ENDIAMESOS KODIKAS #####
+
+def getChar():   
+	c=f.read(1)   
+	return c
 
 def backChar():
 	f.seek(f.tell() - 1, os.SEEK_SET)
@@ -331,10 +428,13 @@ def lex():
 
 def program():
 	global token
+	global word
 	token,word=lex()
 	if token==PROGRAM_TK:
 		token,word=lex()
 		if token==ID_TK:
+			global programID
+			programID=token
 			token,word=lex();
 			block();
 		else:
@@ -352,12 +452,19 @@ def program():
 	
 
 def block():
+	global ID
+	global token
+	global word
 	declarations()
 	subprograms()
+	genQuad("begin_block",ID,"_","_")
 	statements()
+	genQuad("halt", "_", "_", "_")
+	genQuad("end_block",ID,"_","_")
 
 def declarations():
 	global token
+	global word
 	if token==DECLARE_TK:
 		token,word=lex()
 		varlist()
@@ -370,6 +477,7 @@ def declarations():
 		
 def varlist():
 	global token
+	global word
 	if token==ID_TK:
 		token,word=lex()
 		while token==COMMA_TK:
@@ -383,12 +491,14 @@ def varlist():
 
 def subprograms():
 	global token
+	global word
 	while token==FUNCTION_TK:
 		token,word=lex()
 		subprogram()
 	
 def subprogram():
-	global token	
+	global token
+	global word	
 	if token!=ID_TK:
 		print("error in line",line,"function id expected")
 		exit(0)
@@ -405,6 +515,7 @@ def funcbody():
 
 def formalpars():
 	global token
+	global word
 	if token!=OPENPAR_TK:
 		print("error in line",line)
 		exit(0)
@@ -419,6 +530,7 @@ def formalpars():
 		
 def formalparlist():
 	global token
+	global word
 	if token==CLOSEPAR_TK:
 		return
 		
@@ -431,15 +543,26 @@ def formalparlist():
 	
 def formalparitem():
 	global token
+	global word
+	tp = ' '
 	if token==IN_TK or token==INANDOUT_TK or token==INOUT_TK:
+		if token== IN_TK:
+			tp="cv"
+		if token == INOUT_TK:
+			tp = "REF"
+		if token == INANDOUT_TK:
+			tp = "RET"
 		token,word=lex()
 		if token!=ID_TK:
 			print("error, expected ID at line", line)
 			exit(0)
+		
+		genQuad("par", word, tp , "_")
 		token,word=lex()
 	
 def statements():
 	global token
+	global word
 	statement()
 	while token==SEMICOLON_TK:
 		token,word=lex()
@@ -447,6 +570,7 @@ def statements():
 	
 def statement():
 	global token
+	global word
 	if token==ID_TK:
 		assignment_stat()
 	elif token==IF_TK:
@@ -488,16 +612,24 @@ def statement():
 	
 def assignment_stat():
 	global token
+	global word
+	IDplace=word
+	
 	token,word=lex()
+	
 	
 	if token!=ASSIGN_TK:
 		print("expected := at line",line)
 		exit(0)
 	token,word=lex()
-	expression()
+	#place = word
+	Eplace = expression()
+	genQuad(":=", Eplace, "_", IDplace)	
+	
 		
 def if_stat():
 	global token
+	global word
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
@@ -524,34 +656,49 @@ def if_stat():
 		
 def else_part():
 	global token
+	global word
 	if token == ELSE_TK:
 		token,word=lex()
 		statements()
 	
 def while_stat():
 	global token
+	global word
+	Bquad=nextQuad()
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()	
-	condition()
-
+	CondTrue,CondFalse = condition()
+	#backpatch(CondTrue, nextQuad())
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
+		
+	
 	token,word=lex()
+	
+	backpatch(CondTrue, nextQuad())
+	
 	statements()
+	
 	
 	if token != ENDWHILE_TK :
 		print ('Expected endwhiletk! error in line %d' %line)
 		exit(0)
+	genQuad("jump", "_", "_", Bquad)
+	backpatch(CondFalse, nextQuad())
 	token,word=lex()
 	
 def dowhile_stat():
 	global token
+	global word
 	token,word=lex()
+	
+	sQuad = nextQuad()
+	
 	statements()
 
 	if token != ENDDOWHILE_TK :
@@ -564,15 +711,18 @@ def dowhile_stat():
 		exit(0)
 	token,word=lex()	
 	
-	condition()
+	CondTrue,CondFalse=condition()
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
+	backpatch(CondFalse, sQuad)
+	backpatch(CondTrue, nextQuad())
 	token,word=lex()
 	
 def loop_stat():
 	global token
+	global word
 	token,word=lex()
 	statements()
 	if token != ENDLOOP_TK :
@@ -582,11 +732,17 @@ def loop_stat():
 	
 def exit_stat():
 	global token
+	global word
 	token,word=lex()
 	return
 	
 def for_stat():
 	global token
+	global word
+	exitlist = emptyList()
+	true = emptyList()
+	false = emptyList()
+	
 	token,word=lex()
 	while token== WHEN_TK:
 		token,word=lex()
@@ -594,8 +750,10 @@ def for_stat():
 			print("Expected parenthesis! error in line",line)
 			exit(0)
 		token,word=lex()
-		condition()
-	
+		#t=makeList(nextQuad())
+		true,false = condition()
+		mergeList(exitlist, false)
+		backpatch(true, nextQuad())
 		if token!=CLOSEPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
@@ -606,6 +764,9 @@ def for_stat():
 			exit(0)
 		token,word=lex()
 		statements()
+		
+		t=makeList(nextQuad())
+		makeList(genQuad("jump", "_", "_", "_"))
 		
 	if token!=DEFAULT_TK:
 			print("Expected defaulttk! error in line",line)
@@ -630,6 +791,7 @@ def for_stat():
 	
 def incase_stat():
 	global token
+	global word
 	token,word=lex()
 	while token== WHEN_TK:
 		token,word=lex()
@@ -658,25 +820,33 @@ def incase_stat():
 	
 def return_stat():
 	global token
+	global word
 	token,word=lex()
 	expression()	
+	genQuad("retv",word,"_","_")
 	
 def print_stat():
 	global token
+	global word
 	token,word=lex()
 	expression()
+	genQuad("out", "word", "_", "_")
 
 def input_stat():
 	global token
+	global word
+	idplace= ''
 	token,word=lex()
 
 	if token!=ID_TK:
 		print("Expected ID at line,", line)
 		exit(0)
+	genQuad("inp", idplace, "_", "_")
 	token,word=lex()
 		
 def actualpars():
 	global token
+	global word
 
 	if token!=OPENPAR_TK:
 		print("Expected ( at line,",line)
@@ -691,6 +861,7 @@ def actualpars():
 	
 def actualparlist():
 	global token
+	global word
 	if token!=CLOSEPAR_TK:
 		actualparitem()
 		while token==COMMA_TK:
@@ -701,6 +872,7 @@ def actualparlist():
 
 def actualparitem():
 	global token
+	global word
 
 	if token==IN_TK:
 		token,word=lex()
@@ -723,22 +895,48 @@ def actualparitem():
 
 def condition():
 	global token
-	boolterm()
-
+	global word
+	
+	BTrue = emptyList()
+	
+	BFalse = emptyList()
+	
+	BTrue,BFalse=boolterm()
+	
 	while token==OR_TK:
-		token,word=lex()
-		boolterm()
 		
+		backpatch(BFalse,nextQuad())
+		
+		token,word=lex()
+		qTrue = emptyList()
+		qFalse = emptyList()
+		qTrue,qFalse = boolterm()
+		mergeList(BFalse, qFalse)
+		
+	return BTrue,BFalse
+	
 def boolterm():
 	global token
-	boolfactor()
+	global word
+	QTrue=emptyList()
+	QFalse=emptyList()
+	
+	Qtrue,QFalse=boolfactor()
 	
 	while token==AND_TK:
+		backpatch(QTrue, nextQuad())
 		token,word=lex()
-		boolfactor()
 		
+		rTrue,rFalse=boolfactor()
+		
+		mergeList(QFalse,rFalse)
+		
+	return QTrue,QFalse	
 def boolfactor():
 	global token
+	global word
+	RTrue=emptyList()
+	RFalse=emptyList()
 
 	if token==NOT_TK:
 		token,word=lex()
@@ -767,29 +965,63 @@ def boolfactor():
 		expression()
 		relational_oper()
 		expression()
-		
+	return RTrue,RFalse
+
+
 def expression():
 	global token
+	global word
+	
+	T1Place=''
+	
+	T1Place=word
+	T2Place=''
+	EPlace=''
+	
 	optional_sign()
 	term()
 	
 	while(token==PLUS_TK or token==MINUS_TK):
 		add_oper()
+		opeator=''
+		operator=word
 		term()
+		
+		token,word=lex()
+		
+		T2Place=word
+		w = newTemp()
+		genQuad(operator, T1Place, T2Place, w)
+	EPlace=T1Place
+	return EPlace
 
 def term():
 	global token
-	
+	global word
+	F1Place=''
+	F2Place=''
+	Tplace=''
 	factor()
+	F1Place=word
+	
 	while(token==STAR_TK or token==SLASH_TK):
 		mul_oper()
-		factor()
+		operator=word
 		
+		factor()
+		F2Place=word
+		w=newTemp()
+		genQuad(operator, F1Place, F2Place, w)
+	TPlace=F1Place
+	
+	
 def factor():
 	global token
+	global word
 	if token==DIGIT_TK:
+		digit=word
 		token,word=lex()
-		return
+		return digit
 	elif token==OPENPAR_TK:
 		token,word=lex()
 		expression()
@@ -807,6 +1039,7 @@ def factor():
 		
 def idtail():
 	global token
+	global word
 
 	if token==OPENPAR_TK:
 		actualpars()
@@ -815,22 +1048,49 @@ def idtail():
 
 def relational_oper():
 	global token
+	global word
+	RTrue = emptyList()
+	RFalse = emptyList()
 	if token==EQUAL_TK:
+		RTrue=makeList(nextQuad())
+		genQuad(word, E1Place, E2Place, "_")
+		RFalse=makeList(nextQuad())
+		genQuad("jump", "_", "_", "_")
 		token,word=lex()
 		return
 	if token==LESSOREQUAL_TK:
+		RTrue=makeList(nextQuad())
+		genQuad(word, E1Place, E2Place, "_")
+		RFalse=makeList(nextQuad())
+		genQuad("jump", "_", "_", "_")
 		token,word=lex()
 		return
 	if token==GREATEROREQUAL_TK:
+		RTrue=makeList(nextQuad())
+		genQuad(word, E1Place, E2Place, "_")
+		RFalse=makeList(nextQuad())
+		genQuad("jump", "_", "_", "_")
 		token,word=lex()
 		return
 	if token==LESS_TK:
+		RTrue=makeList(nextQuad())
+		genQuad(word, E1Place, E2Place, "_")
+		RFalse=makeList(nextQuad())
+		genQuad("jump", "_", "_", "_")
 		token,word=lex()
 		return
 	if token==GREATER_TK:
+		RTrue=makeList(nextQuad())
+		genQuad(word, E1Place, E2Place, "_")
+		RFalse=makeList(nextQuad())
+		genQuad("jump", "_", "_", "_")
 		token,word=lex()
 		return
 	if token==DIF_TK:
+		RTrue=makeList(nextQuad())
+		genQuad(word, E1Place, E2Place, "_")
+		RFalse=makeList(nextQuad())
+		genQuad("jump", "_", "_", "_")
 		token,word=lex()
 		return
 	else:
@@ -839,6 +1099,7 @@ def relational_oper():
 		
 def add_oper():
 	global token
+	global word
 	if token==PLUS_TK:
 		token,word=lex()
 		return
@@ -850,6 +1111,7 @@ def add_oper():
 		exit(0)
 		
 def mul_oper():
+	global word
 	global token
 	if token==STAR_TK:
 		token,word=lex()
@@ -861,6 +1123,7 @@ def mul_oper():
 		print("expected * or /", line)
 		
 def optional_sign():
+	global word
 	global token
 	if token==PLUS_TK or token==MINUS_TK:
 		add_oper()
@@ -868,6 +1131,55 @@ def optional_sign():
 		return
 		
 
+def C_code(FileName):
+	global intermediate
+	FileName_new = FileName[:len(FileName)-3] + ".c"
+	f = open(FileName_new,"w")
+	code = "int main(){ \n " + ",".join(variables)+ ";\n"
+	f.write(code)
+	for i in range(len(intermediate)):
+		interm = intermediate[i]
+		code = str(interm[0])+" :"+" "
+		
+		if interm[1]==":=":
+			code = code + interm[4]+"="+interm[2]
+		if interm[1]=="+" or interm[1]=="-" or interm[1]=="*" or interm[1]=="/":
+			code = code + interm[4]+"="+interm[2]+interm[1]+interm[3]
+		if interm[1]=='<' or interm[1]=='>' or interm[1]=='<=' or interm[1]=='>=' or interm[1]=='<>':
+			code = code + "if("+interm[2]+interm[1]+interm[3]+") goto"+interm[4]
+		if interm[1]=='jump' :
+			code = code + "goto "+interm[4]
+		if interm[1]== "halt":
+			code = code + "{}"
+		code = code + '\n'
+		
+		f.write(code)
+	
+	f.write("} \n")
+	f.close()		
+			
+def add_scope():
+	global symboltable
+	
+	Scope = scope()
+	Scope.offset = 12
+	if len(symboltable)==0:
+		scope.nestingLevel = 0
+	else:
+		scope.nestingLevel = 1 + symboltable[0].nestingLevel
+		
+		
+	symboltable = [Scope]+symboltable
+			
+	
+def delete_scope():
+	global symboltable
+	if len(symboltable)>1:
+		Scope = symboltable	
+		
+	
+
+			
 f=open(sys.argv[1],"r")
 program()
 
