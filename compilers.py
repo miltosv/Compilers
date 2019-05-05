@@ -426,6 +426,7 @@ def program():
 	global word
 	token,word=lex()
 	if token==PROGRAM_TK:
+		#newscope
 		token,word=lex()
 		if token==ID_TK:
 			#global programID
@@ -482,6 +483,7 @@ def subprograms():
 	global token
 	global word
 	while token==FUNCTION_TK:
+		#add_scope()
 		token,word=lex()
 		subprogram()
 	
@@ -496,6 +498,7 @@ def subprogram():
 	if token!=ENDFUNCTION_TK:
 		print("error in line",line,"endfunction expected")
 		exit(0)
+	#delete_scope()
 	token,word=lex()
 	
 def funcbody():
@@ -534,6 +537,7 @@ def formalparitem():
 	global token
 	global word		
 	if token==IN_TK or token==INANDOUT_TK or token==INOUT_TK:
+		
 		token,word=lex()
 		if token!=ID_TK:
 			print("error, expected ID at line", line)
@@ -1074,6 +1078,16 @@ def optional_sign():
 	else:
 		return 
 		
+def intermediate(FileName):
+	global intermediate
+	FileName_new = FileName[:len(FileName)-3] + ".int"
+	output= open(FileName_new,"w")
+	
+	for i in range(len(intermediate)):
+		interm=intermediate[i]
+		code="" + interm[0] + ":" + interm[1] + " " + interm[2] + " " + interm[3] + " " + interm[4] + "\n"
+		output.write(code)
+	output.close()	
 
 def C_code(FileName):
 	global intermediate
@@ -1083,7 +1097,7 @@ def C_code(FileName):
 	f.write(code)
 	for i in range(len(intermediate)):
 		interm = intermediate[i]
-		code = str(interm[0])+" :"+" "
+		code = interm[0]+" :"+" "
 		
 		if interm[1]==":=":
 			code = code + interm[4]+"="+interm[2]
