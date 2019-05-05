@@ -4,7 +4,7 @@
 # Reserve Words
 import sys
 import os
-from tkinter.constants import CURRENT
+
 
 PROGRAM_TK='programtk'
 ENDPROGRAM_TK='endprogramtk'
@@ -158,8 +158,8 @@ intermediate= emptyList()
 variables= emptyList()									
 
 def getChar():
-        c=f.read(1)
-        return c
+	c=f.read(1)
+	return c
 
 def backChar():
 	f.seek(f.tell() - 1, os.SEEK_SET)
@@ -426,13 +426,13 @@ def program():
 	global word
 	token,word=lex()
 	if token==PROGRAM_TK:
-		#newscope
+		#new_scope()
 		token,word=lex()
 		if token==ID_TK:
-			#global programID
-			#programID=token	   				  
-			token,word=lex();
-			block();
+			global programID
+			programID=word	   				  
+			token,word=lex()
+			block(programID)
 		else:
 			print ("Program Name expected at line",line)
 			exit(0)
@@ -445,12 +445,16 @@ def program():
 	else:
 		print('SyntaxPassed')
 		exit(0)
-	
+	genQuad("halt", "_","_", "_")
 
-def block():
+def block(name):
+	global token
+	global word
 	declarations()
 	subprograms()
+	genQuad("begin_block",name , "_", "_")
 	statements()
+	genQuad("end_block",name,"_","_")
 
 def declarations():
 	global token
@@ -493,17 +497,19 @@ def subprogram():
 	if token!=ID_TK:
 		print("error in line",line,"function id expected")
 		exit(0)
+	global subprogrmID
+	subprogrmID=word
 	token,word=lex()
-	funcbody()
+	funcbody(subprogrmID)
 	if token!=ENDFUNCTION_TK:
 		print("error in line",line,"endfunction expected")
 		exit(0)
 	#delete_scope()
 	token,word=lex()
 	
-def funcbody():
+def funcbody(name):
 	formalpars()
-	block()
+	block(name)
 
 def formalpars():
 	global token
@@ -555,7 +561,7 @@ def statement():
 	global token
 	global word
 	if token==ID_TK:
-		assignment_stat()
+		assignment_stat(word)
 	elif token==IF_TK:
 		
 		if_stat()
@@ -593,26 +599,32 @@ def statement():
 	else:
 		return
 	
-def assignment_stat():
+def assignment_stat(IDPlace):
 	global token
 	global word
+	EPlace=""
+	
 	token,word=lex()
 	
 	if token!=ASSIGN_TK:
 		print("expected := at line",line)
 		exit(0)
 	token,word=lex()
-	expression()
+	EPlace=expression()
+	genQuad(":=", EPlace, "_", IDPlace)
 		
 def if_stat():
 	global token
 	global word
+	BTrue=emptyList()
+	BFalse=emptyList()
+	ifList=emptyList()
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()
-	condition()
+	BTrue,BFalse=condition()
 
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
@@ -622,9 +634,14 @@ def if_stat():
 	if token!=THEN_TK:
 		print ('Expected thentk! error in line %d' %line)
 		exit(0)
-	token,word=lex()	
+	token,word=lex()
+	backpatch(BTrue,nextQuad())	
 	statements()
+	ifList=makeList(nextQuad())
+	genQuad("jump", "_", "_", "_")
+	backpatch(BFalse, nextQuad())
 	else_part()
+	backpatch(ifList, nextQuad())
 
 	if token != ENDIF_TK :
 		print ('Expected endiftk! error in line %d' %line)
@@ -641,19 +658,26 @@ def else_part():
 def while_stat():
 	global token
 	global word
+	BTrue=emptyList()
+	BFalse=emptyList()
+	Bquad=""
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()	
-	condition()
-
+	BTrue,BFalse=condition()
+	Bquad=nextQuad()
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()
+	backpatch(BTrue,nextQuad())
+
 	statements()
+	genQuad("jump", "_", "_", "_")
+	backpatch(BFalse, nextQuad())
 	
 	if token != ENDWHILE_TK :
 		print ('Expected endwhiletk! error in line %d' %line)
@@ -663,9 +687,12 @@ def while_stat():
 def dowhile_stat():
 	global token
 	global word
+	BTrue=emptyList()
+	BFalse=emptyList()
 	token,word=lex()
+	sQuad=nextQuad()
 	statements()
-
+	
 	if token != ENDDOWHILE_TK :
 		print ('Expected whiletk! error in line %d' %line)
 		exit(0)
@@ -676,7 +703,10 @@ def dowhile_stat():
 		exit(0)
 	token,word=lex()	
 	
-	condition()
+	BTrue,BFalse=condition()
+	
+	backpatch(BFalse, sQuad)
+	backpatch(BTrue, nextQuad())
 	
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
