@@ -4,6 +4,7 @@
 # Reserve Words
 import sys
 import os
+from tkinter.constants import CURRENT
 
 PROGRAM_TK='programtk'
 ENDPROGRAM_TK='endprogramtk'
@@ -69,7 +70,7 @@ label=''
 programID=''
 
 symboltable = []
-
+currentdepth = -1
 
 #classes gia pinaka symbolon
 
@@ -85,14 +86,16 @@ class entity:
 	framelength = -1
 	parMode = 0
 	value = ''
+	startquad = ''
 	nextEntiy = None
-	def __init__(self):
-		name= ''
+	def __init__(self,n,t):
+		name = n
+		type = t
 	
 
 
 class scope:
-	Entity = []
+	Entities = []
 	
 	nestingLevel=0
 	enclosingScope= None
@@ -859,7 +862,7 @@ def condition():
 	BFalse=Q1False
 	
 	while token==OR_TK:
-		w=newQuad()
+		w=nextQuad()
 		backpatch(BFalse,w)
 		token,word=lex()
 		
@@ -884,7 +887,7 @@ def boolterm():
 	QFalse=R1False
 	
 	while token==AND_TK:
-		w=newQuad()
+		w=nextQuad()
 		backpatch(QTrue,w)
 		token,word=lex()
 		R2True,R2False=boolfactor()
@@ -957,7 +960,7 @@ def expression():
 		w= newTemp()
 		genQuad(operator,T1Place,T2Place,w)
 		T1Place=w
-	Eplace=T1place
+	Eplace=T1Place
 	
 	return Eplace
 def term():
@@ -1101,22 +1104,36 @@ def C_code(FileName):
 			
 def add_scope():
 	global symboltable
-	
+	global currentdepth
+		
 	Scope = scope()
 	Scope.offset = 12
 	if len(symboltable)==0:
 		scope.nestingLevel = 0
+		currentdepth = 0
 	else:
-		scope.nestingLevel = 1 + symboltable[0].nestingLevel
-		
+		scope.nestingLevel = 1 + symboltable[len(symboltable)-2].nestingLevel
+		currentdepth = currentdepth + 1
 		
 	symboltable = [Scope]+symboltable
-			
+	
+	
 	
 def delete_scope():
 	global symboltable
 	if len(symboltable)>1:
-		Scope = symboltable						 
+		
+		scope = symboltable[1]
+		Entity = scope.Entities[len(scope.Entities)-1]	
+		Entity.framelength = symboltable[0].offset
+		
+	for Scope in symboltable:
+		print Scope.nestingLevel	
+		
+		
+		
+		
+						 
 f=open(sys.argv[1],"r")
 program()
 
