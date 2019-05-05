@@ -1,10 +1,12 @@
 #Stella Delia AM:2430
 #Miltiadis Vasiliadis AM:2944
+from __future__ import nested_scopes
 
 # Reserve Words
 import sys
 import os
 from tkinter.constants import CURRENT
+import symbol
 
 PROGRAM_TK='programtk'
 ENDPROGRAM_TK='endprogramtk'
@@ -87,7 +89,7 @@ class entity:
 	parMode = 0
 	value = ''
 	startquad = ''
-	nextEntiy = None
+	nextEntity = None
 	def __init__(self,n,t):
 		name = n
 		type = t
@@ -99,15 +101,16 @@ class scope:
 	
 	nestingLevel=0
 	enclosingScope= None
-	
+	baseOffset = 12
 	def __init__(self):
 		nestingLevel=0
 		
 class argument:
-	parmode = 0
+	parmode = ''
 	
 	type = ''
 	next= None
+	def __init__(self,parmode):
 	
  ##SYNARTISEIS GIA TON ENDIAMESO KODIKA##
 
@@ -158,8 +161,8 @@ intermediate= emptyList()
 variables= emptyList()									
 
 def getChar():
-        c=f.read(1)
-        return c
+	c=f.read(1)
+	return c
 
 def backChar():
 	f.seek(f.tell() - 1, os.SEEK_SET)
@@ -1092,9 +1095,9 @@ def intermediate(FileName):
 def C_code(FileName):
 	global intermediate
 	FileName_new = FileName[:len(FileName)-3] + ".c"
-	f = open(FileName_new,"w")
+	file = open(FileName_new,"w")
 	code = "int main(){ \n " + ",".join(variables)+ ";\n"
-	f.write(code)
+	file.write(code)
 	for i in range(len(intermediate)):
 		interm = intermediate[i]
 		code = interm[0]+" :"+" "
@@ -1111,10 +1114,10 @@ def C_code(FileName):
 			code = code + "{}"
 		code = code + '\n'
 		
-		f.write(code)
+		file.write(code)
 	
-	f.write("} \n")
-	f.close()		
+	file.write("} \n")
+	file.close()		
 			
 def add_scope():
 	global symboltable
@@ -1129,25 +1132,62 @@ def add_scope():
 		scope.nestingLevel = 1 + symboltable[len(symboltable)-2].nestingLevel
 		currentdepth = currentdepth + 1
 		
-	symboltable = [Scope]+symboltable
+	symboltable = symboltable+[Scope]
 	
 	
 	
 def delete_scope():
 	global symboltable
+	current=currentdepth-1
 	if len(symboltable)>1:
-		
-		scope = symboltable[1]
+			
+		scope = symboltable[current]
 		Entity = scope.Entities[len(scope.Entities)-1]	
-		Entity.framelength = symboltable[0].offset
+		Entity.framelength = symboltable[current].baseoffset
 		
 	for Scope in symboltable:
-		print Scope.nestingLevel	
+		print (Scope.nestingLevel)
+		for Entity in Scope.Entities:
+			
+			if Entity.entType==ID_TK:
+				print ("\t",Entity.name,Entity.entType,Entity.offset)
+			if Entity.entType==INOUT_TK or Entity.entType == INANDOUT_TK or Entity.entType == IN_TK:
+				print ("\t",entity.name,entity.entType,entity.offset,entity.parmode )
+				
+			else:
+				print("\t",Entity.name,Entity.entType,Entity.startquad,Entity.framelength,entity.arguments)
+				
+	
+				
+	symboltable.pop()
+	currentdepth = currentdepth - 1 
+	
+def add_entity(name, tp,quad):
+	global symboltable	
+	
+	Scope = symboltable [currentdepth]
+	Entity = entity(name,tp)
+	
+	if tp == ID_TK:
+		baseoffset=Scope.baseOffset
+		Entity.offset = baseoffset + 4
+		Scope.baseOffset=Scope.baseOffset + 4	
+	if tp == FUNCTION_TK:
+		Entity.startquad=quad
+		Entity.framelength=12
+	if tp == INOUT_TK or tp == INANDOUT_TK or tp == IN_TK:
+		parmode = tp
 		
+	Scope.Entities.append(Entity)
+	
+def add_argument(par):
+	global symboltable
+	
+	Argument = argument(par)
+	
+	
 		
-		
-		
-						 
+
 f=open(sys.argv[1],"r")
 program()
 
