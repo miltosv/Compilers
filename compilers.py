@@ -411,7 +411,6 @@ def lex():
 			else:
 				backChar()
 				token=GREATER_TK
-				print(token + " " + c)
 				return token,">"
 
 	else:
@@ -990,7 +989,6 @@ def boolfactor():
 	else:
 		E1Place=expression()
 		operator=word
-		print(operator)
 		relational_oper()
 
 		E2Place=expression()
@@ -1015,7 +1013,6 @@ def expression():
 	T1Place=term()
 
 	while(token==PLUS_TK or token==MINUS_TK):
-		print(token + word)
 		operator=word
 		add_oper()
 		T2Place=term()
@@ -1034,8 +1031,8 @@ def term():
 	Tplace=""
 	F1Place=factor()
 	while(token==STAR_TK or token==SLASH_TK):
-		mul_oper()
 		operator=word
+		mul_oper()
 		F2Place=factor()
 		w=newTemp()
 		genQuad(operator,F1Place,F2Place,w)
