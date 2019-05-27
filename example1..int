@@ -1,0 +1,51 @@
+L0:begin_block three _ _
+L1:closepar T_0  _
+L2:call g _ _
+L3::= T_0 _ k
+L4:closepar T_0  _
+L5:call g _ _
+L6::= T_0 _ ;
+L7:closepar T_0  _
+L8:call k _ _
+L9:closepar T_0  _
+L10:call i _ _
+L11:i T_0 T_0 L13
+L12:jump _ _ L18
+L13:closepar T_0  _
+L14:call k _ _
+L15:- T_0 - T_0
+L16::= T_0 _ k
+L17:jump _ _ L18
+L18:closepar T_0  _
+L19:call j _ _
+L20:closepar T_0  _
+L21:call k _ _
+L22:k T_0 T_0 T_0
+L23::= T_0 _ ;
+L24:closepar T_0  _
+L25:call k _ _
+L26:closepar T_0  _
+L27:call + _ _
+L28:+ T_0 T_0 T_0
+L29::= T_0 _ ;
+L30:closepar T_0  _
+L31:call k _ _
+L32:1 T_0 1 L34
+L33:jump _ _ L7
+L34:closepar T_0  _
+L35:call j _ _
+L36::= T_0 _ ;
+L37:closepar T_0  _
+L38:call m _ _
+L39:+ T_0 + T_0
+L40:retv T_0 _ _
+L41::= 7 _ ;
+L42:end_block three _ _
+L43:begin_block two _ _
+L44:closepar T_0  _
+L45:call three _ _
+L46::= T_0 _ i
+L47:end_block two _ _
+L48:begin_block example1 _ _
+L49:end_block example1 _ _
+L50:halt _ _ _
