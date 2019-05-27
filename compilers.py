@@ -454,7 +454,9 @@ def program():
 def block():
 	global token
 	global word
+	#genQuad("begin_block",name , "_", "_")
 	declarations()
+	genQuad("begin_block",name , "_", "_")
 	subprograms()
 	statements()
 
