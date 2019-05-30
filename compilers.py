@@ -68,9 +68,15 @@ word=''
 tempCounter=0
 label=0
 programID=''
+r=0
+#gia to loop ston endiameso
+exitID=''
+exitHelp=[]
+inter=0
 
 symboltable = []
 currentdepth = -1
+finalcode = ["L:j Lmain"]
 
 #classes gia pinaka symbolon
 
@@ -84,7 +90,7 @@ class entity:
 	startquad = -1
 	arguments = []
 	framelength = -1
-	parMode = 0
+	parMode = ''
 	value = ''
 	startquad = ''
 	nextEntity = None
@@ -122,31 +128,31 @@ def emptyList():
 def newTemp():
 	global tempCounter
 	t='T_'+str(tempCounter)
+	tempCounter=tempCounter+1
 	return t
 
 def genQuad(oper,x,y,z):
 	global label
 	global intermediate
-	lbl = 'L'+str(label)
+	lbl = str(label)
 	quad = [lbl, oper, x, y, z]
 	label = label + 1
 
 	intermediate = intermediate + [quad]
 
 def makeList(x):
-	z='L'+str(x)
+	z=str(x)
 	return[z]
 
 def mergeList(L1,L2):
 	return L1+L2
 
 def backpatch(L,z):
-	z = 'L'+str(z)
+	z = str(z)
 	global intermediate
-	for i in range(len(L)):
-		label = L[i]
-	for j in range(len(intermediate)):
-		x = intermediate[j]
+	label=L[0]
+	for i in range(len(intermediate)):
+		x = intermediate[i]
 		if x[0] == label:
 			x[4] = z
 			break
@@ -454,9 +460,7 @@ def program():
 def block():
 	global token
 	global word
-	#genQuad("begin_block",name , "_", "_")
 	declarations()
-	genQuad("begin_block",name , "_", "_")
 	subprograms()
 	statements()
 
@@ -493,9 +497,6 @@ def subprograms():
 	global word
 	while token==FUNCTION_TK:
 		token,word=lex()
-		#add_scope()
-                #new_entity(word,FUNCTION_TK,)
-		genQuad("begin_block",word , "_", "_")
 		global functionID
 		functionID=word
 		subprogram(functionID)
@@ -503,9 +504,12 @@ def subprograms():
 def subprogram(name):
 	global token
 	global word
+	#add_scope()
+	#new_entity(word,FUNCTION_TK,)		 		
 	if token!=ID_TK:
 		print("error in line",line,"function id expected")
 		exit(0)
+	genQuad("begin_block",name , "_", "_")
 	token,word=lex()
 	funcbody()
 	if token!=ENDFUNCTION_TK:
@@ -554,7 +558,8 @@ def formalparitem():
 	global word
 	if token==IN_TK:
 		token,word=lex()
-		#new_entity(word,IN_TK)
+		#add_entity(word,IN_TK)
+		#add_argument(word,IN_TK)
 		if token!=ID_TK:
 			print("error, expected ID at line", line)
 			exit(0)
@@ -562,6 +567,8 @@ def formalparitem():
 		token,word=lex()
 	elif token==INOUT_TK:
 		token,word=lex()
+		#add_entity(word,IN_TK)
+		#add_argument(word,IN_TK)				  
 		if token!=ID_TK:
 			print("error expected IDat line", line)
 			exit(0)
@@ -569,6 +576,8 @@ def formalparitem():
 		token,word=lex()
 	elif token==INANDOUT_TK:
 		token,word=lex()
+		#add_entity(word,IN_TK)
+		#add_argument(word,IN_TK)				  
 		if token!=ID_TK:
 			print("error expected ID at line", line)
 			exit(0)
@@ -604,7 +613,6 @@ def statement():
 
 		loop_stat()
 	elif token==EXIT_TK:
-
 		exit_stat()
 	elif token==FORCASE_TK:
 
@@ -689,14 +697,13 @@ def while_stat():
 	global word
 	BTrue=emptyList()
 	BFalse=emptyList()
-	Bquad=""
 	token,word=lex()
 	if token!=OPENPAR_TK:
 		print("Expected parenthesis! error in line",line)
 		exit(0)
 	token,word=lex()
-	BTrue,BFalse=condition()
 	Bquad=nextQuad()
+	BTrue,BFalse=condition()
 
 	if token!=CLOSEPAR_TK:
 		print("Expected parenthesis! error in line",line)
@@ -705,7 +712,7 @@ def while_stat():
 	backpatch(BTrue,nextQuad())
 
 	statements()
-	genQuad("jump", "_", "_", "_")
+	genQuad("jump", "_", "_",str(Bquad))
 	backpatch(BFalse, nextQuad())
 
 	if token != ENDWHILE_TK :
@@ -734,7 +741,7 @@ def dowhile_stat():
 
 	BTrue,BFalse=condition()
 
-	backpatch(BFalse, sQuad)
+	backpatch(BFalse, str(sQuad))
 	backpatch(BTrue, nextQuad())
 
 	if token!=CLOSEPAR_TK:
@@ -745,17 +752,33 @@ def dowhile_stat():
 def loop_stat():
 	global token
 	global word
+	global exitID
+	global exitHelp
+	global inter
+	sQuad=nextQuad()
 	token,word=lex()
-	
 	statements()
+	genQuad("jump","_","_",str(sQuad))
+
 	if token != ENDLOOP_TK :
 		print ('Expected endlooptk! error in line %d' %line)
 		exit(0)
 	token,word=lex()
 
+	if (exitID=='true'):
+                backpatch(intermediate[exitHelp[inter-1]],nextQuad())
+                inter=inter-1
+
 def exit_stat():
 	global token
 	global word
+	global exitID
+	global exitHelp
+	global inter
+	exitID='true'
+	genQuad("jump","_","_","_")
+	exitHelp.append(len(intermediate)-1)
+	inter=inter+1
 	token,word=lex()
 	return
 
@@ -765,14 +788,14 @@ def for_stat():
 	BTrue=emptyList()
 	BFalse=emptyList()
 	token,word=lex()
-	sQuad=nextQuad()
 	while token== WHEN_TK:
 		token,word=lex()
 		if token!=OPENPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
 		token,word=lex()
-		condition()
+		sQuad=nextQuad()
+		BTrue,BFalse=condition()
 
 		if token!=CLOSEPAR_TK:
 			print("Expected parenthesis! error in line",line)
@@ -783,7 +806,10 @@ def for_stat():
 			print("Expected colontk! error in line",line)
 			exit(0)
 		token,word=lex()
+		backpatch(BTrue,nextQuad())
 		statements()
+		genQuad("jump", "_", "_", str(sQuad))
+		backpatch(BFalse,nextQuad())
 
 	if token!=DEFAULT_TK:
 			print("Expected defaulttk! error in line",line)
@@ -795,6 +821,7 @@ def for_stat():
 			exit(0)
 	token,word=lex()
 	statements()
+	genQuad("jump", "_", "_", "_")
 
 	if token!=ENDDEFAULT_TK:
 			print("Expected enddefaulttk! error in line",line)
@@ -809,14 +836,18 @@ def for_stat():
 def incase_stat():
 	global token
 	global word
+	BTrue=emptyList()
+	BFalse=emptyList()
 	token,word=lex()
+
 	while token== WHEN_TK:
 		token,word=lex()
 		if token!=OPENPAR_TK:
 			print("Expected parenthesis! error in line",line)
 			exit(0)
 		token,word=lex()
-		condition()
+		sQuad=nextQuad()
+		BTrue,BFalse=condition()
 
 		if token!=CLOSEPAR_TK:
 			print("Expected parenthesis! error in line",line)
@@ -827,8 +858,10 @@ def incase_stat():
 			print("Expected colontk! error in line",line)
 			exit(0)
 		token,word=lex()
+		backpatch(BTrue,nextQuad())
 		statements()
-
+		genQuad("jump", "_", "_", str(sQuad))
+		backpatch(BFalse,nextQuad())
 
 	if token!=ENDINCASE_TK:
 			print("Expected endincasetk! error in line",line)
@@ -854,9 +887,8 @@ def print_stat():
 def input_stat():
 	global token
 	global word
-	idPlace=""
 	token,word=lex()
-
+	idPlace=word
 	if token!=ID_TK:
 		print("Expected ID at line,", line)
 		exit(0)
@@ -929,8 +961,7 @@ def condition():
 	BFalse=Q1False
 
 	while token==OR_TK:
-		w=nextQuad()
-		backpatch(BFalse,w)
+		backpatch(BFalse,nextQuad())
 		token,word=lex()
 
 		Q2True,Q2False=boolterm()
@@ -954,8 +985,7 @@ def boolterm():
 	QFalse=R1False
 
 	while token==AND_TK:
-		w=nextQuad()
-		backpatch(QTrue,w)
+		backpatch(QTrue,nextQuad())
 		token,word=lex()
 		R2True,R2False=boolfactor()
 
@@ -1000,12 +1030,10 @@ def boolfactor():
 
 		E2Place=expression()
 
-		w=nextQuad()
-		RTrue=makeList(w)
+		RTrue=makeList(nextQuad())
 		genQuad(operator,E1Place,E2Place,"_")
 
-		w=nextQuad()
-		RFalse=makeList(w)
+		RFalse=makeList(nextQuad())
 		genQuad("jump","_","_","_")
 
 	return RTrue,RFalse
@@ -1023,9 +1051,9 @@ def expression():
 		operator=word
 		add_oper()
 		T2Place=term()
-		w= newTemp()
-		genQuad(operator,T1Place,T2Place,w)
-		T1Place=w
+		t= newTemp()
+		genQuad(operator,T1Place,T2Place,t)
+		T1Place=t
 	Eplace=T1Place
 
 	return Eplace
@@ -1041,9 +1069,9 @@ def term():
 		operator=word
 		mul_oper()
 		F2Place=factor()
-		w=newTemp()
-		genQuad(operator,F1Place,F2Place,w)
-		F1Place=w
+		t=newTemp()
+		genQuad(operator,F1Place,F2Place,t)
+		F1Place=t
 	Tplace=F1Place
 	return Tplace
 
@@ -1067,10 +1095,10 @@ def factor():
 		token,word=lex()
 		if token==OPENPAR_TK:
 			idtail()
-			w = newTemp()
-			genQuad("par",w,"RET","_")
+			t = newTemp()
+			genQuad("par",t,"RET","_")
 			genQuad("call", Fplace,"_","_")
-			Fplace=w
+			Fplace=t
 	else:
 		print("error in factor", line)
 		exit(0)
@@ -1168,11 +1196,9 @@ def C_code(FileName):
 		if interm[1]=="+" or interm[1]=="-" or interm[1]=="*" or interm[1]=="/":
 			code = code + interm[4]+"="+interm[2]+interm[1]+interm[3]
 		if interm[1]=='<' or interm[1]=='>' or interm[1]=='<=' or interm[1]=='>=' or interm[1]=='<>':
-			code = code + "if("+interm[2]+interm[1]+interm[3]+") goto"+interm[4]
+			code = code + "if("+interm[2]+interm[1]+interm[3]+") goto "+interm[4]
 		if interm[1]=='jump' :
 			code = code + "goto "+interm[4]
-		if interm[1]== "halt":
-			code = code + "{}"
 		code = code + '\n'
 
 		f.write(code)
@@ -1185,13 +1211,15 @@ def add_scope():
 	global currentdepth
 
 	Scope = scope()
-	Scope.offset = 12
+	#Scope.offset = 12
 	if len(symboltable)==0:
 		scope.nestingLevel = 0
 		currentdepth = 0
+		Scope.offset = 12
 	else:
 		scope.nestingLevel = 1 + symboltable[len(symboltable)-2].nestingLevel
 		currentdepth = currentdepth + 1
+		Scope.offset = 12 + symboltable[len(symboltable)-2].offset
 
 	symboltable = symboltable+[Scope]
 
@@ -1199,6 +1227,7 @@ def add_scope():
 
 def delete_scope():
 	global symboltable
+	global currentdepth
 	current=currentdepth-1
 	if len(symboltable)>1:
 
@@ -1254,18 +1283,93 @@ def Search_Entity(n):
 	for Scope in symboltable:
 		for Entity in Scope.Entities:
 			if Entity.name == n:
-				if Entity.entType==ID_TK:
-					print ("\t",Entity.name,Entity.entType,Entity.offset)
-					break;
-				if Entity.entType==INOUT_TK or Entity.entType == INANDOUT_TK or Entity.entType == IN_TK:
-					print ("\t",entity.name,entity.entType,entity.offset,entity.parmode )
-					break
-				else:
-					print("\t",Entity.name,Entity.entType,Entity.startquad,Entity.framelength,entity.arguments)
-					break
 
+				return Scope.nestingLevel, Entity.entType, Entity.offset, Entity.startquad, Entity.arguments ,Entity.framelength, Entity.value, Entity.parMode
 
+	#			if Entity.entType==ID_TK:
+	#				return Scope.nestingLevel,Entity.name,Entity.entType,Entity.offset
 
+	#			if Entity.entType==INOUT_TK or Entity.entType == INANDOUT_TK or Entity.entType == IN_TK:
+	#				return Scope.nestingLevel,Entity.name,Entity.entType,Entity.offset,Entity.parmode
+
+	#			else:
+	#				return Scope.nestingLevel,Entity.name,Entity.entType,Entity.startquad,Entity.framelength,Entity.arguments
+
+def gnvlcode(a):
+	global symboltable
+	global currentdepth
+	global finalcode
+
+	level,type,offset,startquad,arguments,framelength,value,parmode=Search_Entity(a)
+	code = ''
+	code = code+"lw $t0,-4($sp) \n"
+	for i in range(level):
+		code = code+"lw $t0,-4($t0) \n"
+	code = code + "add $t0, $t0, -"+offset+"\n"
+	finalcode = finalcode + [code]
+
+def loadvr(v,r):
+#	global r
+#	r = 0 
+	global symboltable
+	global currentdepth
+	global finalcode
+	code = ''
+	level,type,offset,startquad,arguments,framelength,value,parmode=Search_Entity(v)
+	if type=="constant":
+		code = code + "li $t"+str(r)+","+str(v)+'\n'
+		r = r + 1
+	elif level==0:
+		code = code + "lw $t"+str(r)+",-"+offset+"($fp)\n"
+		r = r + 1 
+	elif type == "variable" or parmode == "CV" and level==currentdepth:
+		code = code + "lw $t"+str(r)+",-"+offset+"($fp)\n"
+	elif type == "variable" or parmode == "CV" and level==currentdepth:
+		code = code + "lw $t"+str(r)+",-"+offset+"($fp)\n"
+		r = r + 1
+	elif parmode == "REF":
+		code = code + "$t0,-"+offset+"($sp)\n"
+		code = code + "$t"+str(r)+",($t0)\n"
+		r = r + 1 
+		finalcode = finalcode + [code]
+	elif type== "variable" or parmode== "CV" and level<currentdepth :
+		gnvlcode(v)
+		code = code +  "lw $t"+str(r)+",($t0)\n"
+		r = r + 1
+	elif level<currentdepth and parmode=="REF":
+		gnvlcode(v)
+		code = code + "lw $t0,($t0)\n"
+		code = code + "$t"+str(r)+",($t0)"
+		r = r + 1
+	finalcode = finalcode + [code]
+	
+		
+def storevr(v,r):
+	global symboltable
+	global currentdepth
+	global finalcode
+	code = ''
+	level,type,offset,startquad,arguments,framelength,value,parmode=Search_Entity(v)
+	if level == 0:
+		code = code + "sw $t"+str(r)+",-"+offset+"($s0)\n"
+		r = r + 1
+	elif type == "variable" and currentdepth == level or parmode==IN_TK:
+		code = code + "sw $t"+str(r)+"-"+offset+"($sp)\n"
+		r = r + 1
+	elif parmode == INANDOUT_TK and currentdepth== level:
+		code = code + "lw $t0,-"+offset+"($sp)\n"
+		code = code + "sw $t"+str(r)+",($t0)\n"
+		r = r + 1
+	elif currentdepth > level and type == "variable" or parmode == IN_TK:
+		gnvlcode(v)
+		code = code + "sw $t"+str(r)+",($t0)\n"
+		r = r + 1 
+	elif parmode == INANDOUT_TK:
+		gnvlcode(v)
+		code = code + "lw $t0, ($t0)\n"
+		code = code + "sw $t"+str(r)+",($t0)\n"
+		r = r + 1
+	finalcode = finalcode + [code]						   
 
 f=open(sys.argv[1],"r")
 program()

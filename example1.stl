@@ -5,13 +5,9 @@ function three (in g, inout x, inandout m)
 declare k, j;
 k:=g;
 j:=g;
-dowhile
-if (k>i) then
-k:=k-1
-endif;
-j:=j*k;
-k:=k+g
-enddowhile (k<1);
+while (k>0) 
+k:=k-1;
+endwhile;
 m:=j;
 return m+1;
 x:=7
